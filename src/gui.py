@@ -6,6 +6,7 @@ from tkcalendar import Calendar
 from datetime import datetime
 
 class ClientManagementSystem:
+
     def __init__(self, root, csv_data):
         self.root = root
         self.csv_data = csv_data
@@ -15,61 +16,76 @@ class ClientManagementSystem:
 
     def initialize_ui(self):
         self.root.title("Client Management System")
-        self.root.geometry("600x400")
+        self.root.geometry("1024x600")
 
-        # Client Details
-        self.client_details_frame = ttk.Frame(self.root)
-        self.client_details_frame.pack(side="top", fill="both", expand=True)
+        # Left frame for client details and navigation
+        left_frame = ttk.Frame(self.root, padding="10")
+        left_frame.grid(row=0, column=0, sticky="nsew")
 
-        self.name_label = ttk.Label(self.client_details_frame, text="")
-        self.name_label.pack(side="top", pady=5)
-        self.phone_label = ttk.Label(self.client_details_frame, text="")
-        self.phone_label.pack(side="top", pady=5)
-        self.email_label = ttk.Label(self.client_details_frame, text="")
-        self.email_label.pack(side="top", pady=5)
+        # Right frame for scheduling and submission
+        right_frame = ttk.Frame(self.root, padding="10")
+        right_frame.grid(row=0, column=1, sticky="nsew")
 
-        # Copy Button
-        self.copy_button = ttk.Button(self.root, text="Copy Phone Number", command=self.copy_phone_number)
-        self.copy_button.pack(side="top", pady=10)
+        # Client Details in Left Frame
+        self.name_label = ttk.Label(left_frame, text="")
+        self.name_label.grid(row=0, column=0, sticky="w", pady=2)
+        self.phone_label = ttk.Label(left_frame, text="")
+        self.phone_label.grid(row=1, column=0, sticky="w", pady=2)
+        self.phone2_label = ttk.Label(left_frame, text="")
+        self.phone2_label.grid(row=2, column=0, sticky="w", pady=2)  # Corrected the grid position
+        self.email_label = ttk.Label(left_frame, text="")
+        self.email_label.grid(row=3, column=0, sticky="w", pady=2)
 
-        # Outcome Selection
+        # Copy Buttons in Left Frame
+        self.copy_button = ttk.Button(left_frame, text="Copy Phone Number 1", command=lambda: self.copy_phone_number('Telefonnummer 1'))
+        self.copy_button.grid(row=4, column=0, pady=5)
+
+        self.copy_button2 = ttk.Button(left_frame, text="Copy Phone Number 2", command=lambda: self.copy_phone_number('Telefonnummer 2'))
+        self.copy_button2.grid(row=5, column=0, pady=5)
+
+        # Navigation Buttons in Left Frame
+        self.prev_button = ttk.Button(left_frame, text="Previous", command=self.show_previous_client)
+        self.prev_button.grid(row=6, column=0, padx=5, pady=10, sticky="w")
+        self.next_button = ttk.Button(left_frame, text="Next", command=self.show_next_client)
+        self.next_button.grid(row=6, column=1, padx=5, pady=10, sticky="e")
+
+        # Calendar and Timeslot Section in Right Frame
+        self.calendar = Calendar(right_frame, selectmode='day')
+        self.calendar.grid(row=0, column=0, pady=10)
+
+        self.view_timeslots_button = ttk.Button(right_frame, text="View Timeslots", command=self.view_timeslots)
+        self.view_timeslots_button.grid(row=1, column=0, pady=10)
+
+        self.timeslot_selector = ttk.Combobox(right_frame, state="readonly")
+        self.timeslot_selector.grid(row=2, column=0, pady=10)
+        self.timeslot_selector.bind("<<ComboboxSelected>>", self.on_timeslot_selected)
+
+        # Outcome Selection and Comment Section in Right Frame
         self.outcome_var = tk.StringVar()
         outcome_options = ["Not Reached", "Successfully Terminated", "Clarify", "Cancellation", "Other"]
-        outcome_label = tk.Label(self.root, text="Select Call Outcome:")
-        outcome_label.pack(side="top", pady=5)
-        outcome_menu = ttk.OptionMenu(self.root, self.outcome_var, outcome_options[0], *outcome_options)
-        outcome_menu.pack(side="top", pady=5)
+        outcome_label = ttk.Label(right_frame, text="Select Call Outcome:")
+        outcome_label.grid(row=3, column=0, pady=5)
+        outcome_menu = ttk.OptionMenu(right_frame, self.outcome_var, outcome_options[0], *outcome_options)
+        outcome_menu.grid(row=4, column=0, pady=5)
 
-        # Comment Section
-        comment_label = tk.Label(self.root, text="Comments:")
-        comment_label.pack(side="top", pady=5)
-        self.comment_entry = tk.Text(self.root, height=4, width=50)
-        self.comment_entry.pack(side="top", pady=5)
+        self.comment_entry = tk.Text(right_frame, height=4, width=50)
+        self.comment_entry.grid(row=5, column=0, pady=5)
 
-        # Navigation Buttons
-        self.prev_button = ttk.Button(self.root, text="Previous", command=self.show_previous_client)
-        self.prev_button.pack(side="left", padx=10)
-        self.next_button = ttk.Button(self.root, text="Next", command=self.show_next_client)
-        self.next_button.pack(side="right", padx=10)
+        # Submit Button in Right Frame
+        submit_button = ttk.Button(right_frame, text="Submit Outcome", command=self.submit_outcome)
+        submit_button.grid(row=6, column=0, pady=10)
 
-        # Submit Button
-        submit_button = ttk.Button(self.root, text="Submit Outcome", command=self.submit_outcome)
-        submit_button.pack(side="bottom", pady=10)
+        # Configure grid behavior
+        self.root.columnconfigure(1, weight=2)
+        self.root.rowconfigure(0, weight=1)
+        left_frame.columnconfigure(0, weight=1)
+        left_frame.rowconfigure(7, weight=1)
+        right_frame.columnconfigure(0, weight=1)
+        right_frame.rowconfigure(7, weight=1)
 
         # Initialize with the first client
         self.show_client(0)
 
-        # Calendar Widget for Selecting Date
-        self.calendar = Calendar(self.root, selectmode='day')
-        self.calendar.pack(side="top", pady=5)
-
-        self.view_timeslots_button = ttk.Button(self.root, text="View Timeslots", command=self.view_timeslots)
-        self.view_timeslots_button.pack(side="top", pady=5)
-
-        # Timeslot Selector
-        self.timeslot_selector = ttk.Combobox(self.root, state="readonly")
-        self.timeslot_selector.pack(side="top", pady=5)
-        self.timeslot_selector.bind("<<ComboboxSelected>>", self.on_timeslot_selected)
 
 
 
@@ -104,13 +120,15 @@ class ClientManagementSystem:
         client = self.csv_data[index]
         self.name_label.config(text=f"Name: {client.get('Kontaktperson', '')}")
         self.phone_label.config(text=f"Phone: {client.get('Telefonnummer 1', '')}")
+        self.phone2_label.config(text=f"Telefon 2: {client.get('Telefonnummer 2', '')}")
         self.email_label.config(text=f"Email: {client.get('E-Mail', '')}")
 
-    def copy_phone_number(self):
+    def copy_phone_number(self, phone_key):
         current_client = self.csv_data[self.current_index]
-        phone_number = current_client.get('Telefonnummer 1', '')
+        phone_number = current_client.get(phone_key, '')
         pyperclip.copy(phone_number)
-        print("Phone number copied:", phone_number)
+        print(f"{phone_key} copied:", phone_number)
+
 
     def show_next_client(self):
         self.current_index = min(self.current_index + 1, len(self.csv_data) - 1)
@@ -133,7 +151,7 @@ class ClientManagementSystem:
         client_name = current_client.get('Kontaktperson', '')  # Adjust the key as per your CSV
         client_phone = current_client.get('Telefonnummer 1', '')
         client_email = current_client.get('E-Mail', '')
-        client_address = f"{current_client.get('Straße', '')}, {current_client.get('Hausnummer', '')}"  # Combine street and house number
+        client_address = f"{current_client.get('Stra§e', '')}, {current_client.get('Hausnummer', '')}"  # Combine street and house number
 
         # Prepare event description with client information
         event_description = f"Meeting with {client_name}\nPhone: {client_phone}\nEmail: {client_email}\nAddress: {client_address}\n\n{comment_text}"
