@@ -1,0 +1,14 @@
+# Virtual environment
+/venv/
+
+# CSV data
+/data/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+
+# Secret credentials
+client_secret.json
+token.json
