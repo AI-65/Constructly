@@ -18,47 +18,71 @@ class ClientManagementSystem:
         self.root.title("Client Management System")
         self.root.geometry("1024x600")
 
+            # Adjust the frame weights to allocate more space to the left frame
+        self.root.columnconfigure(0, weight=3)  # Give more weight to the left frame
+        self.root.columnconfigure(1, weight=2)  # Right frame
+
         # Left frame for client details and navigation
         left_frame = ttk.Frame(self.root, padding="10")
         left_frame.grid(row=0, column=0, sticky="nsew")
+
+            # Scrollable area in the left frame
+        canvas = tk.Canvas(left_frame)
+        scrollbar = ttk.Scrollbar(left_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
 
         # Right frame for scheduling and submission
         right_frame = ttk.Frame(self.root, padding="10")
         right_frame.grid(row=0, column=1, sticky="nsew")
 
-        # Client Details in Left Frame
-        self.name_label = ttk.Label(left_frame, text="")
+        # Client Details in Scrollable Frame
+        self.name_label = ttk.Label(scrollable_frame, text="")
         self.name_label.grid(row=0, column=0, sticky="w", pady=2)
-        self.phone_label = ttk.Label(left_frame, text="")
+        self.phone_label = ttk.Label(scrollable_frame, text="")
         self.phone_label.grid(row=1, column=0, sticky="w", pady=2)
-        self.phone2_label = ttk.Label(left_frame, text="")
-        self.phone2_label.grid(row=2, column=0, sticky="w", pady=2)  # Corrected the grid position
-        self.email_label = ttk.Label(left_frame, text="")
+        self.phone2_label = ttk.Label(scrollable_frame, text="")
+        self.phone2_label.grid(row=2, column=0, sticky="w", pady=2)
+        self.email_label = ttk.Label(scrollable_frame, text="")
         self.email_label.grid(row=3, column=0, sticky="w", pady=2)
+        self.bauschritt_label = ttk.Label(scrollable_frame, text="", width=50)  # Adjust width as needed
+        self.bauschritt_label.grid(row=4, column=0, sticky="w", pady=2)
+        self.strasse_label = ttk.Label(scrollable_frame, text="")
+        self.strasse_label.grid(row=3, column=0, sticky="w", pady=2)
 
-        # Copy Buttons in Left Frame
-        self.copy_button = ttk.Button(left_frame, text="Copy Phone Number 1", command=lambda: self.copy_phone_number('Telefonnummer 1'))
-        self.copy_button.grid(row=4, column=0, pady=5)
 
-        self.copy_button2 = ttk.Button(left_frame, text="Copy Phone Number 2", command=lambda: self.copy_phone_number('Telefonnummer 2'))
-        self.copy_button2.grid(row=5, column=0, pady=5)
+        # Copy Buttons in Scrollable Frame
+        self.copy_button = ttk.Button(scrollable_frame, text="Copy Phone Number 1", command=lambda: self.copy_phone_number('Telefonnummer 1'))
+        self.copy_button.grid(row=5, column=0, pady=5)
+        self.copy_button2 = ttk.Button(scrollable_frame, text="Copy Phone Number 2", command=lambda: self.copy_phone_number('Telefonnummer 2'))
+        self.copy_button2.grid(row=6, column=0, pady=5)
 
-        # Navigation Buttons in Left Frame
-        self.prev_button = ttk.Button(left_frame, text="Previous", command=self.show_previous_client)
-        self.prev_button.grid(row=6, column=0, padx=5, pady=10, sticky="w")
-        self.next_button = ttk.Button(left_frame, text="Next", command=self.show_next_client)
-        self.next_button.grid(row=6, column=1, padx=5, pady=10, sticky="e")
+        # Navigation Buttons in Scrollable Frame
+        self.prev_button = ttk.Button(scrollable_frame, text="Previous", command=self.show_previous_client)
+        self.prev_button.grid(row=7, column=0, padx=5, pady=10, sticky="w")
+        self.next_button = ttk.Button(scrollable_frame, text="Next", command=self.show_next_client)
+        self.next_button.grid(row=7, column=1, padx=5, pady=10, sticky="e")
 
         # Calendar and Timeslot Section in Right Frame
         self.calendar = Calendar(right_frame, selectmode='day')
         self.calendar.grid(row=0, column=0, pady=10)
-
-        self.view_timeslots_button = ttk.Button(right_frame, text="View Timeslots", command=self.view_timeslots)
-        self.view_timeslots_button.grid(row=1, column=0, pady=10)
+        self.calendar.bind("<<CalendarSelected>>", self.view_timeslots)
 
         self.timeslot_selector = ttk.Combobox(right_frame, state="readonly")
-        self.timeslot_selector.grid(row=2, column=0, pady=10)
+        self.timeslot_selector.grid(row=1, column=0, pady=10)
         self.timeslot_selector.bind("<<ComboboxSelected>>", self.on_timeslot_selected)
+
 
         # Outcome Selection and Comment Section in Right Frame
         self.outcome_var = tk.StringVar()
@@ -89,9 +113,10 @@ class ClientManagementSystem:
 
 
 
-    def view_timeslots(self):
+    def view_timeslots(self, event=None):
         selected_date = self.calendar.get_date()
 
+        # Convert 'MM/DD/YY' to 'YYYY-MM-DD'
         try:
             formatted_date = datetime.strptime(selected_date, '%m/%d/%y').strftime('%Y-%m-%d')
         except ValueError as e:
@@ -102,7 +127,7 @@ class ClientManagementSystem:
             events = get_events_on_date(formatted_date)
             booked_slots = [event['start']['dateTime'][11:16] for event in events if 'dateTime' in event['start']]
 
-            # Generate timeslots for every 20 minutes
+            # Generate 20-minute timeslots
             available_slots = []
             for hour in range(9, 18):
                 for minute in (0, 20, 40):
@@ -116,12 +141,23 @@ class ClientManagementSystem:
 
 
 
+
     def show_client(self, index):
         client = self.csv_data[index]
         self.name_label.config(text=f"Name: {client.get('Kontaktperson', '')}")
         self.phone_label.config(text=f"Phone: {client.get('Telefonnummer 1', '')}")
         self.phone2_label.config(text=f"Telefon 2: {client.get('Telefonnummer 2', '')}")
-        self.email_label.config(text=f"Email: {client.get('E-Mail', '')}")
+        bauschritt_key = 'N\x8achste Bauschritt'
+        self.bauschritt_label.config(text=f"Nächster Bauschritt: {client.get(bauschritt_key, '')}")
+        self.strasse_label.config(text=f"Adresse: {client.get('Stra§e', '')}, {client.get('Hausnummer', '')}, {client.get('Teilpolygon', '')}")
+
+       
+
+
+
+
+
+        print(f"Showing client: {client}")
 
     def copy_phone_number(self, phone_key):
         current_client = self.csv_data[self.current_index]
